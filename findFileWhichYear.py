@@ -33,8 +33,7 @@ def get_file_date (file_path):
 
 def move_files_by_year(source_folder, destination_folder, user_option):
     # 确保目标文件夹存在
-    if not os.path.exists(destination_folder):
-        os.makedirs(destination_folder)
+    os.makedirs(destination_folder, exist_ok=True)
 
     # 遍历源文件夹及其所有嵌套子文件夹
     for root, dirs, files in os.walk(source_folder):
