@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from datetime import datetime
 from PIL import Image
 import piexif
@@ -14,18 +15,20 @@ DESTINATION_FOLDER = './完成处理'
 
 def get_file_date (file_path):
     # 先用文件创建时间来兜底
-    creation_time = datetime.fromtimestamp(os.path.getctime(file_path))
+    if sys.platform.startswith("darwin"):
+        creation_time = datetime.fromtimestamp(os.stat(file_path).st_birthtime)
+    else:
+        creation_time = datetime.fromtimestamp(os.path.getctime(file_path))
     # 如果是图片则优先使用拍摄日期
     try:
         if file_path.lower().endswith(('.jpg', '.jpeg', '.png', '.heif', '.heic')):
             image = Image.open(file_path)
             exif_dict = piexif.load(image.info['exif'])
-            date_str = exif_dict['Exif'][36867].decode('utf-8')
+            date_str = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal].decode('utf-8')
             creation_time = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
     except (KeyError, AttributeError, ValueError, OSError) as e:
         # 出现异常还是继续使用文件创建日期
-        print(f'图片文件{file_path}无Exif或Exif中无拍摄信息，使用文件创建时间处理。原因：{e}')
-        creation_time = datetime.fromtimestamp(os.path.getctime(file_path))
+        print(f'图片文件 {file_path} 无Exif或Exif中无拍摄信息，使用文件创建时间 {creation_time} 处理。原因：{e}')
     return creation_time
 
 def move_files_by_year(source_folder, destination_folder, user_option):
