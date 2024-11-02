@@ -10,8 +10,8 @@ from pillow_heif import register_heif_opener
 # 为 PIL 提供 HEIF 格式的支持
 register_heif_opener()
 
-SOURCE_FOLDER = './待处理'
-DESTINATION_FOLDER = './完成处理'
+SOURCE_FOLDER = '/Users/name/Pictures/海马爸比'
+DESTINATION_FOLDER = '/Volumes/NAS/海马爸比/时光相册'
 
 def get_file_date (file_path):
     # 先用文件创建时间来兜底
@@ -21,7 +21,7 @@ def get_file_date (file_path):
         creation_time = datetime.fromtimestamp(os.path.getctime(file_path))
     # 如果是图片则优先使用拍摄日期
     try:
-        if file_path.lower().endswith(('.jpg', '.jpeg', '.png', '.heif', '.heic')):
+        if file_path.lower().endswith(('.jpg', '.jpeg', '.heif', '.heic')):
             image = Image.open(file_path)
             exif_dict = piexif.load(image.info['exif'])
             date_str = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal].decode('utf-8')
