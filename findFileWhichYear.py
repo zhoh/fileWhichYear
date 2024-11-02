@@ -36,6 +36,7 @@ def move_files_by_year(source_folder, destination_folder, user_option):
     os.makedirs(destination_folder, exist_ok=True)
 
     # 遍历源文件夹及其所有嵌套子文件夹
+    count = 0
     for root, dirs, files in os.walk(source_folder):
         for file in files:
             try:
@@ -76,11 +77,12 @@ def move_files_by_year(source_folder, destination_folder, user_option):
                     continue
                 else:
                     # print(f"文件 {file_path} 移动到 {target_file_path}")
+                    count += 1
                     shutil.move(file_path, target_file_path)
             except (OSError, shutil.Error) as e:
                 print(f"文件 {file} 处理异常，跳过。异常原因: {e}")
                 continue
-
+    print(f'共移动文件：{count}个')
 
 if __name__ == "__main__":
     # 做一些初始化工作
