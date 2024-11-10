@@ -28,7 +28,11 @@ def get_file_date (file_path):
             image = Image.open(file_path)
             exif_dict = piexif.load(image.info['exif'])
             date_str = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal].decode('utf-8')
-            creation_time = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+            date_str = date_str.replace('上午', '').replace('下午', '')
+            try:
+                creation_time = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+            except ValueError:
+                creation_time = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
     except (KeyError, AttributeError, ValueError, OSError) as e:
         # 出现异常还是继续使用文件创建日期
         print(f'图片文件 {file_path} 无Exif或Exif中无拍摄信息，使用文件创建时间 {creation_time} 处理。原因：{e}')
@@ -68,7 +72,7 @@ def process_file(file_path, file, user_destination_folder, user_mode_option, log
             print(f"【跳过】 {file_path} 的目标文件 {target_file_path} 已存在，跳过")
             return False
         else:
-            log_entry = f"【成功】 {file_path} 移动到 {target_file_path}。\n"
+            log_entry = f"【成功】 {file_path} 移动到 {target_file_path}\n"
             log_file.write(log_entry)
             print(f"【成功】 {file_path} 移动到 {target_file_path}")
             shutil.move(file_path, target_file_path)
@@ -84,6 +88,7 @@ def move_files_by_year_month(user_source_folder, user_destination_folder, user_m
     os.makedirs(user_destination_folder, exist_ok=True)
 
     # 遍历源文件夹及其所有嵌套子文件夹
+    total_count = 0
     success_count = 0
     log_file_path = os.path.join(os.getcwd(), LOG_FILE_NAME)
     with open(log_file_path, 'w') as log_file:
@@ -96,6 +101,7 @@ def move_files_by_year_month(user_source_folder, user_destination_folder, user_m
                     # 源文件路径
                     file_path = os.path.join(root, file)
                     # 处理文件
+                    total_count += 1
                     if process_file(file_path, file, user_destination_folder, user_mode_option, log_file):
                         success_count += 1
         elif user_scope_option == 'subFiles':
@@ -107,11 +113,12 @@ def move_files_by_year_month(user_source_folder, user_destination_folder, user_m
                     if file == '.DS_Store' or file == 'Thumbs.db' or file == 'Desktop.ini':
                         continue
                     # 处理文件
+                    total_count += 1
                     if process_file(file_path, file, user_destination_folder, user_mode_option, log_file):
                         success_count += 1
         else:
             print('处理范围模式入参有误，请确认。')
-        print(f'共成功移动文件：{success_count}个，移动日志请查看：{log_file_path}')
+        print(f'共处理文件：{total_count} | 成功：{success_count} | 失败：{total_count - success_count} | 移动日志请查看：{log_file_path}')
 
 if __name__ == "__main__":
     # 获取分类模式
