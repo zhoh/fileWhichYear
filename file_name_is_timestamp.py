@@ -14,7 +14,22 @@ def is_timestamp_filename(filename):
     """Check if filename is a timestamp with supported extension."""
     pattern = r'^(\d{10})\.(jpg|jpeg|png|gif|mp4|mov|avi|mkv)$'
     match = re.match(pattern, filename.lower())
-    return match if match else None
+    if match:
+        return {"type": "timestamp", "timestamp": int(match.group(1)), "extension": match.group(2), "original": match.group(0)}
+    # Check for IMG_YYYYMMDD_HHMMSS or MP4_YYYYMMDD_HHMMSS
+    pattern2 = r'^(img|mp4)_(\d{8})_(\d{6})\.(jpg|jpeg|png|gif|mp4|mov|avi|mkv)$'
+    match2 = re.match(pattern2, filename.lower())
+    if match2:
+        date_part = match2.group(2)
+        time_part = match2.group(3)
+        dt_str = f"{date_part}{time_part}"
+        try:
+            dt = datetime.strptime(dt_str, "%Y%m%d%H%M%S")
+            timestamp = int(dt.timestamp())
+            return {"type": "datetime", "timestamp": timestamp, "extension": match2.group(4), "original": match2.group(0)}
+        except Exception:
+            return None
+    return None
 
 def update_image_exif(file_path, timestamp):
     """Update EXIF data for image files."""
@@ -65,17 +80,16 @@ def process_files(folder_path):
         if not os.path.isfile(file_path):
             continue
             
-        match = is_timestamp_filename(filename)
-        if not match:
+        info = is_timestamp_filename(filename)
+        if not info:
             skipped_count += 1
             continue
             
-        timestamp_str = match.group(1)
-        extension = match.group(2)
+        timestamp = info["timestamp"]
+        extension = info["extension"]
         
         try:
             # Convert timestamp to datetime
-            timestamp = int(timestamp_str)
             file_datetime = datetime.fromtimestamp(timestamp)
             
             # Format for display and filename
@@ -83,10 +97,16 @@ def process_files(folder_path):
             new_filename = file_datetime.strftime('%Y%m%d_%H%M%S') + '.' + extension
             new_file_path = os.path.join(folder_path, new_filename)
             
-            # Rename the file
-            os.rename(file_path, new_file_path)
-            renamed_count += 1
-            file_path = new_file_path  # Update file path for subsequent operations
+            # Avoid overwriting existing files
+            if new_filename != filename and os.path.exists(new_file_path):
+                print(f"Skip renaming {filename} to {new_filename}: target exists.")
+                skipped_count += 1
+                continue
+            
+            if new_filename != filename:
+                os.rename(file_path, new_file_path)
+                renamed_count += 1
+                file_path = new_file_path  # Update file path for subsequent operations
             
             # Set file access and modification times
             os.utime(file_path, (timestamp, timestamp))
