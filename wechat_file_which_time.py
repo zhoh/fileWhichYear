@@ -27,8 +27,8 @@ def process_wechat_files(folder_path):
     skipped_files = 0
     failed_files = 0
     
-    # 正则表达式匹配 "wx_camera_TIMESTAMP.jpg/mp4" 格式的文件
-    pattern = re.compile(r'wx_camera_(\d+)\.(jpg|jpeg|mp4|png)$', re.IGNORECASE)
+    # 正则表达式匹配 "wx_camera_TIMESTAMP.jpg/mp4" 和 "mmexport_TIMESTAMP.jpg/mp4" 格式的文件
+    pattern = re.compile(r'(wx_camera|mmexport)_(\d+)\.(jpg|jpeg|mp4|png)$', re.IGNORECASE)
     
     # 遍历文件夹中的所有文件
     for filename in os.listdir(folder_path):
@@ -49,14 +49,14 @@ def process_wechat_files(folder_path):
         
         try:
             # 提取时间戳并转换为秒
-            timestamp_ms = int(match.group(1))
+            timestamp_ms = int(match.group(2))
             timestamp_s = timestamp_ms / 1000  # 转换为秒
             
             # 设置文件的创建和修改时间
             os.utime(file_path, (timestamp_s, timestamp_s))
             
             # 如果是照片，还要设置EXIF数据
-            file_ext = match.group(2).lower()
+            file_ext = match.group(3).lower()
             if file_ext in ['jpg', 'jpeg', 'png']:
                 try:
                     set_exif_date(file_path, timestamp_s)
